@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="description" content="Automated disaster recovery orchestration for multi-region AWS workloads"/>
+  <title>disaster-recovery-orchestrator — charlesbulabula</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0d1117;--surface:#161b22;--surface2:#21262d;
+      --border:#30363d;--text:#e6edf3;--muted:#8b949e;
+      --accent:#58a6ff;--green:#3fb950;
+      --cat:#e3b341;--cat-bg:#e3b3411a;
+      --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+      --mono:"SF Mono","Fira Code",Consolas,monospace;
+    }
+    body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    /* Nav */
+    nav{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+    nav a{color:var(--muted)}nav a:hover{color:var(--text)}
+    nav .sep{opacity:.4}
+
+    /* Hero */
+    .hero{max-width:860px;margin:0 auto;padding:52px 24px 32px;width:100%}
+    .cat-badge{display:inline-block;background:var(--cat-bg);color:var(--cat);border:1px solid var(--cat);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px}
+    .hero h1{font-size:clamp(22px,4vw,32px);font-weight:800;letter-spacing:-.02em;margin-bottom:12px;font-family:var(--mono);color:var(--text)}
+    .hero h1 span{color:var(--cat)}
+    .hero p{font-size:17px;color:var(--muted);max-width:640px;line-height:1.7;margin-bottom:24px}
+
+    /* Stats row */
+    .stats-row{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:28px}
+    .stat-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+    .stat-item strong{color:var(--text)}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+    /* Progress */
+    .progress-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:28px}
+    .progress-label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:10px}
+    .progress-label strong{color:var(--text)}
+    .progress-bar-bg{background:var(--surface2);border-radius:6px;height:8px;overflow:hidden}
+    .progress-bar-fill{height:100%;border-radius:6px;background:#58a6ff;transition:width .6s ease;width:0.0%}
+
+    /* Stack */
+    .section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:12px}
+    .stack-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+    .stack-badge{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;font-family:var(--mono);color:var(--text)}
+
+    /* Roadmap */
+    .roadmap-section{max-width:860px;margin:0 auto;padding:0 24px 48px;width:100%;flex:1}
+    .ms-block{margin-bottom:20px}
+    .ms-header{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:4px}
+    .ms-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .ms-name{font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--muted)}
+    .ms-count{margin-left:auto;font-size:11px;color:var(--muted)}
+    .task-row{display:flex;align-items:baseline;gap:8px;padding:6px 0 6px 4px;border-bottom:1px solid rgba(48,54,61,.4);font-size:13px}
+    .task-row:last-child{border-bottom:none}
+    .task-icon{width:16px;text-align:center;flex-shrink:0;font-family:var(--mono)}
+    .task-row.done .task-name{color:var(--muted);text-decoration:line-through;text-decoration-color:#6e7681}
+    .task-row.done .task-icon{color:var(--green)}
+    .task-row.active .task-name{color:var(--text);font-weight:600}
+    .task-row.active .task-icon{color:var(--accent)}
+    .task-row.pending .task-name{color:#6e7681}
+    .task-row.pending .task-icon{color:#6e7681}
+    .task-branch{font-size:11px;color:var(--accent);background:rgba(88,166,255,.1);border-radius:4px;padding:0 6px;margin-left:auto;flex-shrink:0;font-family:var(--mono)}
+
+    /* CTA */
+    .cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;text-decoration:none}
+    .btn-primary{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+    .btn-primary:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+    .btn-cat{background:var(--cat-bg);border:1px solid var(--cat);color:var(--cat)}
+    .btn-cat:hover{opacity:.85;text-decoration:none}
+
+    /* Footer */
+    footer{background:var(--surface);border-top:1px solid var(--border);padding:16px 24px;text-align:center;font-size:12px;color:var(--muted)}
+    footer a{color:var(--muted)}footer a:hover{color:var(--text)}
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="https://github.com/charlesbulabula">charlesbulabula</a>
+  <span class="sep">/</span>
+  <a href="https://github.com/charlesbulabula/disaster-recovery-orchestrator" style="color:var(--text);font-weight:600">disaster-recovery-orchestrator</a>
+</nav>
+
+<div class="hero">
+  <div class="cat-badge">AWS Cloud</div>
+  <h1>disaster<span>-</span>recovery<span>-</span>orchestrator</h1>
+  <p>Automated disaster recovery orchestration for multi-region AWS workloads</p>
+
+  <div class="stats-row">
+    <div class="stat-item"><span class="live-dot"></span>&nbsp;<strong>Active</strong>&nbsp;development</div>
+    <div class="stat-item">🔀 <strong id="commit-count">0</strong> commits</div>
+    <div class="stat-item">📋 <strong>13</strong> tasks planned</div>
+    <div class="stat-item" id="last-commit-item" style="display:none">🕐 Last commit: <strong id="last-commit">—</strong></div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-label">
+      <strong>Roadmap progress</strong>
+      <span><strong style="color:var(--cat)">0.0%</strong> · 0/13 tasks complete</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+  </div>
+
+  <div class="section-title">Tech Stack</div>
+  <div class="stack-row"><span class="stack-badge">Python</span><span class="stack-badge">AWS Lambda</span><span class="stack-badge">Step Functions</span><span class="stack-badge">Route53</span><span class="stack-badge">RDS</span><span class="stack-badge">DynamoDB</span></div>
+
+  <div class="cta-row">
+    <a class="btn btn-primary" href="https://github.com/charlesbulabula/disaster-recovery-orchestrator">
+      <svg height="16" viewBox="0 0 16 16" width="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      View on GitHub
+    </a>
+    <a class="btn btn-cat" href="https://github.com/charlesbulabula/disaster-recovery-orchestrator/commits/main">
+      Commit history →
+    </a>
+  </div>
+</div>
+
+<div class="roadmap-section">
+  <div class="section-title" style="margin-bottom:20px">Roadmap</div>
+  
+        <div class="ms-block">
+          <div class="ms-header">
+            <span class="ms-dot" style="background:#58a6ff"></span>
+            <span class="ms-name">SETUP</span>
+            <span class="ms-count">0/1</span>
+          </div>
+          <div class="ms-tasks">
+            <div class="task-row active">
+              <span class="task-icon">›</span>
+              <span class="task-name">Initialize DR orchestrator project</span>
+              
+            </div></div>
+        </div>
+        <div class="ms-block">
+          <div class="ms-header">
+            <span class="ms-dot" style="background:#30363d"></span>
+            <span class="ms-name">CORE</span>
+            <span class="ms-count">0/4</span>
+          </div>
+          <div class="ms-tasks">
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">Health check framework</span>
+              <span class="task-branch">feature/health-checks</span>
+            </div>
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">Failover state machine</span>
+              <span class="task-branch">feature/failover-state-machine</span>
+            </div>
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">RDS cross-region replica promotion</span>
+              <span class="task-branch">feature/rds-failover</span>
+            </div>
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">Route53 DNS failover automation</span>
+              <span class="task-branch">feature/route53-failover</span>
+            </div></div>
+        </div>
+        <div class="ms-block">
+          <div class="ms-header">
+            <span class="ms-dot" style="background:#30363d"></span>
+            <span class="ms-name">FEATURES</span>
+            <span class="ms-count">0/6</span>
+          </div>
+          <div class="ms-tasks">
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">S3 cross-region replication validation</span>
+              <span class="task-branch">feature/s3-replication</span>
+            </div>
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">ECS service failover</span>
+              <span class="task-branch">feature/ecs-failover</span>
+            </div>
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">DR runbook automation</span>
+              <span class="task-branch">feature/runbook-automation</span>
+            </div>
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">Chaos engineering integration</span>
+              <span class="task-branch">feature/chaos-testing</span>
+            </div>
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">Recovery time tracking</span>
+              <span class="task-branch">feature/rto-tracking</span>
+            </div>
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">Notification and escalation</span>
+              <span class="task-branch">feature/notifications</span>
+            </div></div>
+        </div>
+        <div class="ms-block">
+          <div class="ms-header">
+            <span class="ms-dot" style="background:#30363d"></span>
+            <span class="ms-name">TESTS</span>
+            <span class="ms-count">0/1</span>
+          </div>
+          <div class="ms-tasks">
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">Test suite and DR drills</span>
+              <span class="task-branch">feature/tests</span>
+            </div></div>
+        </div>
+        <div class="ms-block">
+          <div class="ms-header">
+            <span class="ms-dot" style="background:#30363d"></span>
+            <span class="ms-name">DOCS</span>
+            <span class="ms-count">0/1</span>
+          </div>
+          <div class="ms-tasks">
+            <div class="task-row pending">
+              <span class="task-icon">·</span>
+              <span class="task-name">Documentation</span>
+              <span class="task-branch">docs/dr-guide</span>
+            </div></div>
+        </div>
+</div>
+
+<footer>
+  Built by <a href="https://github.com/charlesbulabula">charlesbulabula</a> ·
+  <a href="https://github.com/charlesbulabula/disaster-recovery-orchestrator">github.com/charlesbulabula/disaster-recovery-orchestrator</a>
+</footer>
+
+<script>
+// Fetch live GitHub data
+fetch('https://api.github.com/repos/charlesbulabula/disaster-recovery-orchestrator/commits?per_page=1')
+  .then(r => {
+    const link = r.headers.get('Link') || '';
+    return r.json().then(data => ({data, link}));
+  })
+  .then(({data, link}) => {
+    if (data && data[0]) {
+      const d = new Date(data[0].commit.author.date);
+      const ago = Math.floor((Date.now() - d) / 86400000);
+      document.getElementById('last-commit').textContent =
+        ago === 0 ? 'today' : ago === 1 ? 'yesterday' : ago + ' days ago';
+      document.getElementById('last-commit-item').style.display = 'flex';
+    }
+  }).catch(() => {});
+</script>
+
+</body>
+</html>
