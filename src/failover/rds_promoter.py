@@ -225,4 +225,4 @@ def execute_rds_promotion(
         message=f"Promoted to {endpoint}:{port}",
     )
 
-# _r 20260602101207-b0416bae
+# _r 20260604103103-2fc00a16
