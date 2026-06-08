@@ -230,4 +230,4 @@ def scale_dr_services(
     logger.info("DR scaling complete: %d/%d services healthy", sum(r.success for r in report.results), len(report.results))
     return report
 
-# _r 20260608105903-eedb98b1
+# _r 20260608131614-3d933014
