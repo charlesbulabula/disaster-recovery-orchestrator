@@ -289,4 +289,4 @@ class RegionHealthProber:
         except ClientError as exc:
             logger.error("Failed to publish SNS DR alert: %s", exc)
 
-# _r 20260626140704-32ecfb0a
+# _r 20260627102813-fa324a09
